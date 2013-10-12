@@ -1,12 +1,19 @@
-* {
-    font-family: sans-serif;
+.axis text {
+  font: 12px sans-serif;
 }
 
-body {
-    background-color: white;
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
 }
 
 #spectrograph {
-    display: block;
+    float: left;
     background-color: black ;
+}
+
+svg {
+    float: left;
 }
