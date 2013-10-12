@@ -1,10 +1,15 @@
 $(document).ready(function() {
-    // create the audio context (chrome only for now)
-    var context = new webkitAudioContext();
+    // let's get this party started!
+    var contextClass = (window.AudioContext ||
+                        window.webkitAudioContext ||
+                        window.mozAudioContext ||
+                        window.oAudioContext ||
+                        window.msAudioContext);
+    var context = new contextClass();
     var audioBuffer;
     var sourceNode;
     var analyser;
-    var javascriptNode;
+    var scriptNode;
 
     // get the context from the canvas to draw on
     var ctx = $("#spectrograph").get()[0].getContext("2d");
@@ -24,11 +29,6 @@ $(document).ready(function() {
     setupAudioNodes();
 
     function setupAudioNodes() {
-        // setup a javascript node
-        javascriptNode = context.createJavaScriptNode(2048, 1, 1);
-        // connect to destination, else it isn't called
-        javascriptNode.connect(context.destination);
-
         // setup a analyzer
         analyser = context.createAnalyser();
         analyser.smoothingTimeConstant = 0;
@@ -38,16 +38,22 @@ $(document).ready(function() {
         var mediaElement = document.getElementById('play');
         sourceNode = context.createMediaElementSource(mediaElement);
 
-        // wire that shit up!
-        sourceNode.connect(analyser);
-        analyser.connect(javascriptNode);
+        // setup a javascript node
+        scriptNode = context.createScriptProcessor(2048, 1, 1);
+
+        // Route 1: Source -> Destination
         sourceNode.connect(context.destination);
+
+        // Route 2: Source -> Analyser -> Script -> Destination
+        sourceNode.connect(analyser);
+        analyser.connect(scriptNode);
+        scriptNode.connect(context.destination);
     }
 
     // when the javascript node is called
     // we use information from the analyzer node
     // to draw the volume
-    javascriptNode.onaudioprocess = function () {
+    scriptNode.onaudioprocess = function () {
         // get the average for the first channel
         var array = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(array);
