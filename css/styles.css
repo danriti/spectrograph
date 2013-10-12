@@ -1,0 +1,14 @@
+* {
+    font-family: sans-serif;
+}
+
+body {
+    background-color: white;
+}
+
+#spectrograph {
+    width: 800;
+    height: 512;
+    display: block;
+    background-color: black ;
+}

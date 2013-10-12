@@ -1,4 +1,4 @@
-
+$(document).ready(function() {
     // create the audio context (chrome only for now)
     var context = new webkitAudioContext();
     var audioBuffer;
@@ -132,4 +132,4 @@
     $('#stop').click(function() {
         stopSound();
     });
-
+});

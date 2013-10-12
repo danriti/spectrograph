@@ -1,27 +1,23 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/html">
+
 <head>
     <title>Spectrograph</title>
-    <style>
-        * {
-            font-family: sans-serif;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="css/styles.css">
 </head>
-<body style="background-color: white;">
 
-<h2>Spectrograph</h2>
+<body>
+    <h2>Spectrograph</h2>
 
-<audio id="play" controls>
-  <source src="/media/so_high.mp3" type="audio/mp3">
-  Your browser does not support the audio tag.
-</audio>
+    <audio id="play" controls>
+        <source src="/media/so_high.mp3" type="audio/mp3">
+        Your browser does not support the audio tag.
+    </audio>
 
-<canvas id="canvas" width="800" height="512" style="display: block; background-color: black ;"></canvas>
+    <canvas id="canvas" width="800" height="512" style="display: block; background-color: black ;"></canvas>
 
-<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
-<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/chroma-js/0.5.2/chroma.min.js"></script>
-<script type="text/javascript" src="js/spectrograph.js"></script>
-
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/chroma-js/0.5.2/chroma.min.js"></script>
+    <script type="text/javascript" src="js/spectrograph.js"></script>
 </body>
 </html>
