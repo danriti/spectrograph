@@ -7,7 +7,7 @@ $(document).ready(function() {
     var javascriptNode;
 
     // get the context from the canvas to draw on
-    var ctx = $("#canvas").get()[0].getContext("2d");
+    var ctx = $("#spectrograph").get()[0].getContext("2d");
 
     // create a temp canvas we use for copying
     var tempCanvas = document.createElement("canvas"),
@@ -98,7 +98,7 @@ $(document).ready(function() {
 
     function drawSpectrogram(array) {
         // copy the current canvas onto the temp canvas
-        var canvas = document.getElementById("canvas");
+        var canvas = document.getElementById("spectrograph");
 
         tempCtx.drawImage(canvas, 0, 0, 800, 512);
 
