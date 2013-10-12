@@ -34,52 +34,14 @@ $(document).ready(function() {
         analyser.smoothingTimeConstant = 0;
         analyser.fftSize = 1024;
 
-        // create a buffer source node
+        // create a media element source node
         var mediaElement = document.getElementById('play');
-        console.log('mediaElement: ', mediaElement);
-        //sourceNode = context.createBufferSource();
         sourceNode = context.createMediaElementSource(mediaElement);
 
-        console.log('sourceNode: ', sourceNode);
-
+        // wire that shit up!
         sourceNode.connect(analyser);
         analyser.connect(javascriptNode);
-
         sourceNode.connect(context.destination);
-    }
-
-    // load the specified sound
-    function loadSound(url) {
-        var request = new XMLHttpRequest();
-        request.open('GET', url, true);
-        request.responseType = 'arraybuffer';
-
-        // When loaded decode the data
-        request.onload = function () {
-
-            // decode the data
-            context.decodeAudioData(request.response, function (buffer) {
-                // when the audio is decoded play the sound
-                playSound(buffer);
-            }, onError);
-        }
-        request.send();
-    }
-
-
-    function playSound(buffer) {
-        sourceNode.buffer = buffer;
-        sourceNode.start(0);
-        sourceNode.loop = false;
-    }
-
-    function stopSound(buffer) {
-        sourceNode.stop(0);
-    }
-
-    // log if an error occurs
-    function onError(e) {
-        console.log(e);
     }
 
     // when the javascript node is called
@@ -121,15 +83,4 @@ $(document).ready(function() {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
 
-    // Callbacks
-    $('#play').click(function() {
-        loadSound("/media/wagner-short.ogg");
-        //loadSound("/media/sweep.mp3");
-        //loadSound("/media/so_high.mp3");
-    });
-
-    // Callbacks
-    $('#stop').click(function() {
-        stopSound();
-    });
 });
