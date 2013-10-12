@@ -6,9 +6,7 @@ body {
     background-color: white;
 }
 
-#spectrograph {
-    width: 800;
-    height: 512;
+#canvas {
     display: block;
     background-color: black ;
 }
