@@ -106,9 +106,27 @@ $(document).ready(function() {
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
       .append("g")
-        //.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     svg.append("g")
         .attr("class", "x axis")
         .call(xAxis);
+
+    // Read dem files.
+    function selectAudio(files) {
+        var file = files[0];
+        if (file.type.match(/audio.*/)) {
+            var reader = new FileReader();
+            reader.onload = function(d) {
+                var e = document.getElementById("play");
+                e.src = d.target.result;
+                e.setAttribute("type", file.type);
+                e.setAttribute("controls", "controls");
+                e.setAttribute("autoplay", "true");
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    window.selectAudio = selectAudio;
+    $('#file-input').attr('onchange', 'window.selectAudio(this.files)');
 });

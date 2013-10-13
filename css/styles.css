@@ -17,3 +17,8 @@
 svg {
     float: left;
 }
+
+input, audio {
+    display: block;
+    margin: 5px 0px;
+}
