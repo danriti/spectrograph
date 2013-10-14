@@ -155,56 +155,86 @@ $(document).ready(function() {
 
     });
 
-    var context = new Spectro.AudioContext(),
-        sourceNode,
-        analyser,
-        scriptNode;
+    // Spectro.Spectrograph
+    // --------------------
 
-    var input = new Spectro.AudioPlayer({
-        inputEl: '#file-input',
-        audioEl: '#play'
+    // The spectrograph ties all the components together to create a single
+    // interface to the spectrograph.
+    Spectro.Spectrograph = function(options) {
+        options || (options = {});
+        this.context = options.context;
+        this.scriptNode = options.scriptNode;
+        this.inputEl = options.inputEl;
+        this.audioEl = options.audioEl;
+        this.canvasEl = options.canvasEl;
+        this.initialize();
+    }
+
+    // Set up all inheritable **Spectro.Spectrograph** properties and methods.
+    _.extend(Spectro.Spectrograph.prototype, {
+
+        initialize: function() {
+            // Initialize components.
+            var input = new Spectro.AudioPlayer({
+                inputEl: this.inputEl,
+                audioEl: this.audioEl
+            });
+            var graph = new Spectro.Graph({
+                canvasEl: this.canvasEl
+            });
+
+            this.setupAudioNodes(this.context, graph);
+        },
+
+        setupAudioNodes: function(context, graph) {
+            // setup a analyzer
+            var analyser = context.createAnalyser();
+            analyser.smoothingTimeConstant = 0;
+            analyser.fftSize = 1024;
+
+            // create a media element source node
+            var mediaElement = $(this.audioEl).get(0);
+            var sourceNode = context.createMediaElementSource(mediaElement);
+
+            // setup a javascript node
+            scriptNode = context.createScriptProcessor(2048, 1, 1);
+
+            // Route 1: Source -> Destination
+            sourceNode.connect(context.destination);
+
+            // Route 2: Source -> Analyser -> Script -> Destination
+            sourceNode.connect(analyser);
+            analyser.connect(scriptNode);
+            scriptNode.connect(context.destination);
+
+            // when the javascript node is called
+            // we use information from the analyzer node
+            // to draw the volume
+            scriptNode.onaudioprocess = function () {
+                // get the average for the first channel
+                var array = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(array);
+
+                // draw the spectrogram
+                if (sourceNode.mediaElement && !sourceNode.mediaElement.paused) {
+                    graph.drawSpectrogram(array);
+                }
+            }
+        }
     });
 
-    var graph = new Spectro.Graph({
+    // Create a context and a scriptNode object. Both these nodes seem
+    // dependent on scope at this level...
+    var context = new Spectro.AudioContext(),
+        scriptNode;
+
+    // Create a Spectrograph object to get the party started!
+    var sg = new Spectro.Spectrograph({
+        context: context,
+        scriptNode: scriptNode,
+        inputEl: '#file-input',
+        audioEl: '#play',
         canvasEl: '#spectrograph'
     });
 
-    function setupAudioNodes() {
-        // setup a analyzer
-        analyser = context.createAnalyser();
-        analyser.smoothingTimeConstant = 0;
-        analyser.fftSize = 1024;
-
-        // create a media element source node
-        var mediaElement = document.getElementById('play');
-        sourceNode = context.createMediaElementSource(mediaElement);
-
-        // setup a javascript node
-        scriptNode = context.createScriptProcessor(2048, 1, 1);
-
-        // Route 1: Source -> Destination
-        sourceNode.connect(context.destination);
-
-        // Route 2: Source -> Analyser -> Script -> Destination
-        sourceNode.connect(analyser);
-        analyser.connect(scriptNode);
-        scriptNode.connect(context.destination);
-
-        // when the javascript node is called
-        // we use information from the analyzer node
-        // to draw the volume
-        scriptNode.onaudioprocess = function () {
-            // get the average for the first channel
-            var array = new Uint8Array(analyser.frequencyBinCount);
-            analyser.getByteFrequencyData(array);
-
-            // draw the spectrogram
-            if (sourceNode.mediaElement && !sourceNode.mediaElement.paused) {
-                graph.drawSpectrogram(array);
-            }
-        }
-    }
-
-    // load the sound
-    setupAudioNodes();
 });
