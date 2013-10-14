@@ -8,11 +8,10 @@ $(document).ready(function() {
                             window.oAudioContext ||
                             window.msAudioContext);
 
-    var context = new Spectro.AudioContext();
-    var audioBuffer;
-    var sourceNode;
-    var analyser;
-    var scriptNode;
+    var context = new Spectro.AudioContext(),
+        sourceNode,
+        analyser,
+        scriptNode;
 
     // get the context from the canvas to draw on
     var ctx = $("#spectrograph").get()[0].getContext("2d");
@@ -27,9 +26,6 @@ $(document).ready(function() {
     var color = new chroma.scale(['#000000', '#ff0000', '#ffff00', '#ffffff'])
                           .mode('rgb')
                           .domain([0, 300]);
-
-    // load the sound
-    setupAudioNodes();
 
     function setupAudioNodes() {
         // setup a analyzer
@@ -51,19 +47,19 @@ $(document).ready(function() {
         sourceNode.connect(analyser);
         analyser.connect(scriptNode);
         scriptNode.connect(context.destination);
-    }
 
-    // when the javascript node is called
-    // we use information from the analyzer node
-    // to draw the volume
-    scriptNode.onaudioprocess = function () {
-        // get the average for the first channel
-        var array = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(array);
+        // when the javascript node is called
+        // we use information from the analyzer node
+        // to draw the volume
+        scriptNode.onaudioprocess = function () {
+            // get the average for the first channel
+            var array = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(array);
 
-        // draw the spectrogram
-        if (sourceNode.mediaElement && !sourceNode.mediaElement.paused) {
-            drawSpectrogram(array);
+            // draw the spectrogram
+            if (sourceNode.mediaElement && !sourceNode.mediaElement.paused) {
+                drawSpectrogram(array);
+            }
         }
     }
 
@@ -132,4 +128,7 @@ $(document).ready(function() {
     }
     window.selectAudio = selectAudio;
     $('#file-input').attr('onchange', 'window.selectAudio(this.files)');
+
+    // load the sound
+    setupAudioNodes();
 });
