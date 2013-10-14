@@ -1,11 +1,14 @@
 $(document).ready(function() {
-    // let's get this party started!
-    var contextClass = (window.AudioContext ||
-                        window.webkitAudioContext ||
-                        window.mozAudioContext ||
-                        window.oAudioContext ||
-                        window.msAudioContext);
-    var context = new contextClass();
+
+    var Spectro = {};
+
+    Spectro.AudioContext = (window.AudioContext ||
+                            window.webkitAudioContext ||
+                            window.mozAudioContext ||
+                            window.oAudioContext ||
+                            window.msAudioContext);
+
+    var context = new Spectro.AudioContext();
     var audioBuffer;
     var sourceNode;
     var analyser;
