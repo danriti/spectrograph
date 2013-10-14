@@ -43,9 +43,76 @@ $(document).ready(function() {
         }
         selectAudio = _.bind(selectAudio, this);
 
-        // Bind events
+        // Bind events.
         $(this.inputEl).on('change', selectAudio);
     }
+
+    // Spectro.Graph
+    // -------------
+
+    // Draw a spectrogram to a canvas element.
+    Spectro.Graph = function(options) {
+        options || (options = {});
+        this.canvasEl = options.canvasEl;
+
+        // Le canvas
+        var $el = $(this.canvasEl);
+        this.height = $el.height();
+        this.width = $el.width();
+        this.canvasContext = $el.get(0).getContext('2d');
+
+        // Create a temporary canvas to act as a buffer
+        this.tempCanvas = document.createElement("canvas");
+        this.tempCanvasContext = this.tempCanvas.getContext("2d");
+        this.tempCanvas.width=this.width;
+        this.tempCanvas.height=this.height;
+
+        // Setup colors
+        var palette = ['#000000', '#ff0000', '#ffff00', '#ffffff'];
+        this.color = new chroma.scale(palette)
+                               .mode('rgb')
+                               .domain([0, 300]);
+    }
+
+    // Set up all inheritable **Spectro.Graph** properties and methods.
+    _.extend(Spectro.Graph.prototype, {
+
+        // Callback method for drawing the spectrogram in real time.
+        drawSpectrogram: function(array) {
+            var canvas = $(this.canvasEl).get(0),
+                ctx = this.canvasContext,
+                tempCanvas = this.tempCanvas,
+                tempCanvasContext = this.tempCanvasContext,
+                height = this.height,
+                width = this.width,
+                color = this.color;
+
+            // Copy the current canvas onto the temp canvas.
+            tempCanvasContext.drawImage(canvas, 0, 0, width, height);
+
+            // Iterate over the elements from the array.
+            for (var i = 0; i < array.length; i++) {
+                // Draw each pixel with the specific color.
+                var value = array[i];
+                ctx.fillStyle = color(value).hex();
+
+                // Draw the line at the right side of the canvas.
+                ctx.fillRect(width - 1, height - i, 1, 1);
+            }
+
+            // Set translate on the canvas.
+            ctx.translate(-1, 0);
+            // Draw the copied image.
+            ctx.drawImage(tempCanvas, 0, 0, width, height, 0, 0, width, height);
+            // Reset the transformation matrix.
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+
+    });
+
+    var graph = new Spectro.Graph({
+        canvasEl: '#spectrograph'
+    });
 
     var input = new Spectro.AudioPlayer({
         inputEl: '#file-input',
@@ -56,20 +123,6 @@ $(document).ready(function() {
         sourceNode,
         analyser,
         scriptNode;
-
-    // get the context from the canvas to draw on
-    var ctx = $("#spectrograph").get()[0].getContext("2d");
-
-    // create a temp canvas we use for copying
-    var tempCanvas = document.createElement("canvas"),
-        tempCtx = tempCanvas.getContext("2d");
-    tempCanvas.width=800;
-    tempCanvas.height=512;
-
-    // used for color distribution
-    var color = new chroma.scale(['#000000', '#ff0000', '#ffff00', '#ffffff'])
-                          .mode('rgb')
-                          .domain([0, 300]);
 
     function setupAudioNodes() {
         // setup a analyzer
@@ -102,34 +155,9 @@ $(document).ready(function() {
 
             // draw the spectrogram
             if (sourceNode.mediaElement && !sourceNode.mediaElement.paused) {
-                drawSpectrogram(array);
+                graph.drawSpectrogram(array);
             }
         }
-    }
-
-    function drawSpectrogram(array) {
-        // copy the current canvas onto the temp canvas
-        var canvas = document.getElementById("spectrograph");
-
-        tempCtx.drawImage(canvas, 0, 0, 800, 512);
-
-        // iterate over the elements from the array
-        for (var i = 0; i < array.length; i++) {
-            // draw each pixel with the specific color
-            var value = array[i];
-            ctx.fillStyle = color(value).hex();
-
-            // draw the line at the right side of the canvas
-            ctx.fillRect(800 - 1, 512 - i, 1, 1);
-        }
-
-        // set translate on the canvas
-        ctx.translate(-1, 0);
-        // draw the copied image
-        ctx.drawImage(tempCanvas, 0, 0, 800, 512, 0, 0, 800, 512);
-
-        // reset the transformation matrix
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
 
     // D3 hack to draw an axis. This needs to be cleaned up!
