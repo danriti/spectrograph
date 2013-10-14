@@ -1,132 +1,240 @@
 $(document).ready(function() {
-    // let's get this party started!
-    var contextClass = (window.AudioContext ||
-                        window.webkitAudioContext ||
-                        window.mozAudioContext ||
-                        window.oAudioContext ||
-                        window.msAudioContext);
-    var context = new contextClass();
-    var audioBuffer;
-    var sourceNode;
-    var analyser;
-    var scriptNode;
 
-    // get the context from the canvas to draw on
-    var ctx = $("#spectrograph").get()[0].getContext("2d");
+    var Spectro = {};
 
-    // create a temp canvas we use for copying
-    var tempCanvas = document.createElement("canvas"),
-        tempCtx = tempCanvas.getContext("2d");
-    tempCanvas.width=800;
-    tempCanvas.height=512;
+    // Spectro.AudioContext
+    // ------------
 
-    // used for color distribution
-    var color = new chroma.scale(['#000000', '#ff0000', '#ffff00', '#ffffff'])
-                          .mode('rgb')
-                          .domain([0, 300]);
+    // TBD.
+    Spectro.AudioContext = (window.AudioContext ||
+                            window.webkitAudioContext ||
+                            window.mozAudioContext ||
+                            window.oAudioContext ||
+                            window.msAudioContext);
 
-    // load the sound
-    setupAudioNodes();
+    // Spectro.AudioPlayer
+    // -----------
 
-    function setupAudioNodes() {
-        // setup a analyzer
-        analyser = context.createAnalyser();
-        analyser.smoothingTimeConstant = 0;
-        analyser.fftSize = 1024;
+    // Connects an input element to an audio element to create an audio player
+    // that plays local audio files.
+    Spectro.AudioPlayer = function(options) {
+        options || (options = {});
+        this.inputEl = options.inputEl;
+        this.audioEl = options.audioEl;
 
-        // create a media element source node
-        var mediaElement = document.getElementById('play');
-        sourceNode = context.createMediaElementSource(mediaElement);
-
-        // setup a javascript node
-        scriptNode = context.createScriptProcessor(2048, 1, 1);
-
-        // Route 1: Source -> Destination
-        sourceNode.connect(context.destination);
-
-        // Route 2: Source -> Analyser -> Script -> Destination
-        sourceNode.connect(analyser);
-        analyser.connect(scriptNode);
-        scriptNode.connect(context.destination);
-    }
-
-    // when the javascript node is called
-    // we use information from the analyzer node
-    // to draw the volume
-    scriptNode.onaudioprocess = function () {
-        // get the average for the first channel
-        var array = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(array);
-
-        // draw the spectrogram
-        if (sourceNode.mediaElement && !sourceNode.mediaElement.paused) {
-            drawSpectrogram(array);
+        // Callback for when a file is selected via the input element that
+        // attempts to read the file and connect it to the audio element.
+        var selectAudio = function(event) {
+            var self = this;
+            var file = (self.file && self.files[0] ||
+                        event.target && event.target.files[0] ||
+                        {});
+            if (file.type && file.type.match(/audio.*/)) {
+                var reader = new FileReader();
+                reader.onload = function(d) {
+                    var e = $(self.audioEl).get(0);
+                    e.src = d.target.result;
+                    e.setAttribute("type", file.type);
+                    e.setAttribute("controls", "controls");
+                    e.setAttribute("autoplay", "true");
+                };
+                reader.readAsDataURL(file);
+            }
         }
+        selectAudio = _.bind(selectAudio, this);
+
+        // Bind events.
+        $(this.inputEl).on('change', selectAudio);
     }
 
-    function drawSpectrogram(array) {
-        // copy the current canvas onto the temp canvas
-        var canvas = document.getElementById("spectrograph");
+    // Spectro.Axis
+    // ------------
 
-        tempCtx.drawImage(canvas, 0, 0, 800, 512);
+    // Creates a d3 axis for use with a Spectro.Graph object.
+    Spectro.Axis = function(options) {
+        options || (options = {});
+        this.element = options.element;
+        this.height = options.height;
+        this.width = options.width;
+        this.range = options.range;
+        this.domain = options.domain;
 
-        // iterate over the elements from the array
-        for (var i = 0; i < array.length; i++) {
-            // draw each pixel with the specific color
-            var value = array[i];
-            ctx.fillStyle = color(value).hex();
+        // D3 hack to draw an axis. This needs to be cleaned up!
+        var margin = {top: 0, right: 0, bottom: 0, left: 5},
+            width = this.width;
+            height = this.height;
 
-            // draw the line at the right side of the canvas
-            ctx.fillRect(800 - 1, 512 - i, 1, 1);
+        var x = d3.scale.linear()
+            .range(this.range)
+            .domain(this.domain);
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("right");
+
+        var svg = d3.select(this.element).append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        svg.append("g")
+            .attr("class", "x axis")
+            .call(xAxis);
+    }
+
+    // Spectro.Graph
+    // -------------
+
+    // Draw a spectrogram to a canvas element.
+    Spectro.Graph = function(options) {
+        options || (options = {});
+        this.canvasEl = options.canvasEl;
+
+        // Le canvas
+        var $el = $(this.canvasEl);
+        this.height = $el.height();
+        this.width = $el.width();
+        this.canvasContext = $el.get(0).getContext('2d');
+
+        // Create a temporary canvas to act as a buffer
+        this.tempCanvas = document.createElement("canvas");
+        this.tempCanvasContext = this.tempCanvas.getContext("2d");
+        this.tempCanvas.width=this.width;
+        this.tempCanvas.height=this.height;
+
+        // Setup colors
+        var palette = ['#000000', '#ff0000', '#ffff00', '#ffffff'];
+        this.color = new chroma.scale(palette)
+                               .mode('rgb')
+                               .domain([0, 300]);
+
+        // Add an axis to the graph.
+        var axis = new Spectro.Axis({
+            element: '#graph',
+            height: 512,
+            width: 50,
+            range: [0, 512],
+            domain: [22000, 0]
+        });
+    }
+
+    // Set up all inheritable **Spectro.Graph** properties and methods.
+    _.extend(Spectro.Graph.prototype, {
+
+        // Callback method for drawing the spectrogram in real time.
+        drawSpectrogram: function(array) {
+            var canvas = $(this.canvasEl).get(0),
+                ctx = this.canvasContext,
+                tempCanvas = this.tempCanvas,
+                tempCanvasContext = this.tempCanvasContext,
+                height = this.height,
+                width = this.width,
+                color = this.color;
+
+            // Copy the current canvas onto the temp canvas.
+            tempCanvasContext.drawImage(canvas, 0, 0, width, height);
+
+            // Iterate over the elements from the array.
+            for (var i = 0; i < array.length; i++) {
+                // Draw each pixel with the specific color.
+                var value = array[i];
+                ctx.fillStyle = color(value).hex();
+
+                // Draw the line at the right side of the canvas.
+                ctx.fillRect(width - 1, height - i, 1, 1);
+            }
+
+            // Set translate on the canvas.
+            ctx.translate(-1, 0);
+            // Draw the copied image.
+            ctx.drawImage(tempCanvas, 0, 0, width, height, 0, 0, width, height);
+            // Reset the transformation matrix.
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
 
-        // set translate on the canvas
-        ctx.translate(-1, 0);
-        // draw the copied image
-        ctx.drawImage(tempCanvas, 0, 0, 800, 512, 0, 0, 800, 512);
+    });
 
-        // reset the transformation matrix
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // Spectro.Spectrograph
+    // --------------------
+
+    // The spectrograph ties all the components together to create a single
+    // interface to the spectrograph.
+    Spectro.Spectrograph = function(options) {
+        options || (options = {});
+        this.context = options.context;
+        this.scriptNode = options.scriptNode;
+        this.inputEl = options.inputEl;
+        this.audioEl = options.audioEl;
+        this.canvasEl = options.canvasEl;
+        this.initialize();
     }
 
-    // D3 hack to draw an axis. This needs to be cleaned up!
-    var margin = {top: 0, right: 0, bottom: 0, left: 5},
-        width = 50;
-        height = 512;
+    // Set up all inheritable **Spectro.Spectrograph** properties and methods.
+    _.extend(Spectro.Spectrograph.prototype, {
 
-    var x = d3.scale.linear()
-        .range([0, 512])
-        .domain([22000, 0]);
+        initialize: function() {
+            // Initialize components.
+            var input = new Spectro.AudioPlayer({
+                inputEl: this.inputEl,
+                audioEl: this.audioEl
+            });
+            var graph = new Spectro.Graph({
+                canvasEl: this.canvasEl
+            });
 
-    var xAxis = d3.svg.axis()
-        .scale(x)
-        .orient("right");
+            this.setupAudioNodes(this.context, graph);
+        },
 
-    var svg = d3.select("#lala").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        setupAudioNodes: function(context, graph) {
+            // setup a analyzer
+            var analyser = context.createAnalyser();
+            analyser.smoothingTimeConstant = 0;
+            analyser.fftSize = 1024;
 
-    svg.append("g")
-        .attr("class", "x axis")
-        .call(xAxis);
+            // create a media element source node
+            var mediaElement = $(this.audioEl).get(0);
+            var sourceNode = context.createMediaElementSource(mediaElement);
 
-    // Read dem files.
-    function selectAudio(files) {
-        var file = files[0];
-        if (file.type.match(/audio.*/)) {
-            var reader = new FileReader();
-            reader.onload = function(d) {
-                var e = document.getElementById("play");
-                e.src = d.target.result;
-                e.setAttribute("type", file.type);
-                e.setAttribute("controls", "controls");
-                e.setAttribute("autoplay", "true");
-            };
-            reader.readAsDataURL(file);
+            // setup a javascript node
+            scriptNode = context.createScriptProcessor(2048, 1, 1);
+
+            // Route 1: Source -> Destination
+            sourceNode.connect(context.destination);
+
+            // Route 2: Source -> Analyser -> Script -> Destination
+            sourceNode.connect(analyser);
+            analyser.connect(scriptNode);
+            scriptNode.connect(context.destination);
+
+            // when the javascript node is called
+            // we use information from the analyzer node
+            // to draw the volume
+            scriptNode.onaudioprocess = function () {
+                // get the average for the first channel
+                var array = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(array);
+
+                // draw the spectrogram
+                if (sourceNode.mediaElement && !sourceNode.mediaElement.paused) {
+                    graph.drawSpectrogram(array);
+                }
+            }
         }
-    }
-    window.selectAudio = selectAudio;
-    $('#file-input').attr('onchange', 'window.selectAudio(this.files)');
+    });
+
+    // Create a context and a scriptNode object. Both these nodes seem
+    // dependent on scope at this level...
+    var context = new Spectro.AudioContext(),
+        scriptNode;
+
+    // Create a Spectrograph object to get the party started!
+    var sg = new Spectro.Spectrograph({
+        context: context,
+        scriptNode: scriptNode,
+        inputEl: '#file-input',
+        audioEl: '#play',
+        canvasEl: '#spectrograph'
+    });
+
 });

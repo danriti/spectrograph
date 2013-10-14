@@ -12,14 +12,16 @@
     <input id="file-input" type="file" />
 
     <audio id="play" controls>
+        <source src="media/wagner-short.ogg" type="audio/ogg">
         Your browser does not support the audio tag.
     </audio>
 
-    <div id="lala">
+    <div id="graph">
         <canvas id="spectrograph" width="800" height="512"></canvas>
     </div>
 
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.2/underscore-min.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/chroma-js/0.5.2/chroma.min.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.3.3/d3.min.js"></script>
     <script type="text/javascript" src="js/spectrograph.js"></script>
