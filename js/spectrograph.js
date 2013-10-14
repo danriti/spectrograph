@@ -2,7 +2,7 @@ $(document).ready(function() {
 
     var Spectro = {};
 
-    // AudioContext
+    // Spectro.AudioContext
     // ------------
 
     // TBD.
@@ -12,7 +12,7 @@ $(document).ready(function() {
                             window.oAudioContext ||
                             window.msAudioContext);
 
-    // AudioPlayer
+    // Spectro.AudioPlayer
     // -----------
 
     // Connects an input element to an audio element to create an audio player
@@ -47,6 +47,42 @@ $(document).ready(function() {
         $(this.inputEl).on('change', selectAudio);
     }
 
+    // Spectro.Axis
+    // ------------
+
+    // Creates a d3 axis for use with a Spectro.Graph object.
+    Spectro.Axis = function(options) {
+        options || (options = {});
+        this.element = options.element;
+        this.height = options.height;
+        this.width = options.width;
+        this.range = options.range;
+        this.domain = options.domain;
+
+        // D3 hack to draw an axis. This needs to be cleaned up!
+        var margin = {top: 0, right: 0, bottom: 0, left: 5},
+            width = this.width;
+            height = this.height;
+
+        var x = d3.scale.linear()
+            .range(this.range)
+            .domain(this.domain);
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("right");
+
+        var svg = d3.select(this.element).append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        svg.append("g")
+            .attr("class", "x axis")
+            .call(xAxis);
+    }
+
     // Spectro.Graph
     // -------------
 
@@ -72,6 +108,15 @@ $(document).ready(function() {
         this.color = new chroma.scale(palette)
                                .mode('rgb')
                                .domain([0, 300]);
+
+        // Add an axis to the graph.
+        var axis = new Spectro.Axis({
+            element: '#graph',
+            height: 512,
+            width: 50,
+            range: [0, 512],
+            domain: [22000, 0]
+        });
     }
 
     // Set up all inheritable **Spectro.Graph** properties and methods.
@@ -110,19 +155,19 @@ $(document).ready(function() {
 
     });
 
-    var graph = new Spectro.Graph({
-        canvasEl: '#spectrograph'
-    });
+    var context = new Spectro.AudioContext(),
+        sourceNode,
+        analyser,
+        scriptNode;
 
     var input = new Spectro.AudioPlayer({
         inputEl: '#file-input',
         audioEl: '#play'
     });
 
-    var context = new Spectro.AudioContext(),
-        sourceNode,
-        analyser,
-        scriptNode;
+    var graph = new Spectro.Graph({
+        canvasEl: '#spectrograph'
+    });
 
     function setupAudioNodes() {
         // setup a analyzer
@@ -159,29 +204,6 @@ $(document).ready(function() {
             }
         }
     }
-
-    // D3 hack to draw an axis. This needs to be cleaned up!
-    var margin = {top: 0, right: 0, bottom: 0, left: 5},
-        width = 50;
-        height = 512;
-
-    var x = d3.scale.linear()
-        .range([0, 512])
-        .domain([22000, 0]);
-
-    var xAxis = d3.svg.axis()
-        .scale(x)
-        .orient("right");
-
-    var svg = d3.select("#lala").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    svg.append("g")
-        .attr("class", "x axis")
-        .call(xAxis);
 
     // load the sound
     setupAudioNodes();
