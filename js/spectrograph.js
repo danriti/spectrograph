@@ -2,11 +2,55 @@ $(document).ready(function() {
 
     var Spectro = {};
 
+    // AudioContext
+    // ------------
+
+    // TBD.
     Spectro.AudioContext = (window.AudioContext ||
                             window.webkitAudioContext ||
                             window.mozAudioContext ||
                             window.oAudioContext ||
                             window.msAudioContext);
+
+    // AudioPlayer
+    // -----------
+
+    // Connects an input element to an audio element to create an audio player
+    // that plays local audio files.
+    Spectro.AudioPlayer = function(options) {
+        options || (options = {});
+        this.inputEl = options.inputEl;
+        this.audioEl = options.audioEl;
+
+        // Callback for when a file is selected via the input element that
+        // attempts to read the file and connect it to the audio element.
+        var selectAudio = function(event) {
+            var self = this;
+            var file = (self.file && self.files[0] ||
+                        event.target && event.target.files[0] ||
+                        {});
+            if (file.type && file.type.match(/audio.*/)) {
+                var reader = new FileReader();
+                reader.onload = function(d) {
+                    var e = $(self.audioEl).get(0);
+                    e.src = d.target.result;
+                    e.setAttribute("type", file.type);
+                    e.setAttribute("controls", "controls");
+                    e.setAttribute("autoplay", "true");
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        selectAudio = _.bind(selectAudio, this);
+
+        // Bind events
+        $(this.inputEl).on('change', selectAudio);
+    }
+
+    var input = new Spectro.AudioPlayer({
+        inputEl: '#file-input',
+        audioEl: '#play'
+    });
 
     var context = new Spectro.AudioContext(),
         sourceNode,
@@ -110,24 +154,6 @@ $(document).ready(function() {
     svg.append("g")
         .attr("class", "x axis")
         .call(xAxis);
-
-    // Read dem files.
-    function selectAudio(files) {
-        var file = files[0];
-        if (file.type.match(/audio.*/)) {
-            var reader = new FileReader();
-            reader.onload = function(d) {
-                var e = document.getElementById("play");
-                e.src = d.target.result;
-                e.setAttribute("type", file.type);
-                e.setAttribute("controls", "controls");
-                e.setAttribute("autoplay", "true");
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-    window.selectAudio = selectAudio;
-    $('#file-input').attr('onchange', 'window.selectAudio(this.files)');
 
     // load the sound
     setupAudioNodes();
