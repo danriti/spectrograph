@@ -2,7 +2,7 @@
 @root = File.expand_path(File.dirname(__FILE__))
 
 use Rack::Static,
-  :urls => ["/images", "/js", "/css"],
+  :urls => ["/media", "/images", "/js", "/css"],
   :root => @root
 
 run lambda { |env|
